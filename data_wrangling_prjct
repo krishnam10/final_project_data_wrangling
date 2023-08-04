@@ -1,0 +1,92 @@
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# 1. Import the dataset using Pandas from the given URL
+url = "https://raw.githubusercontent.com/SR1608/Datasets/main/coviddata.csv"
+df = pd.read_csv(url)
+
+# 2. High Level Data Understanding
+# a. Find no. of rows & columns in the dataset
+num_rows, num_cols = df.shape
+
+# b. Data types of columns
+data_types = df.dtypes
+
+# c. Info & describe of data in the dataframe
+data_info = df.info()
+data_describe = df.describe()
+
+# 3. Low Level Data Understanding
+# a. Count of unique values in the location column
+unique_locations = df['location'].nunique()
+
+# b. Continent with maximum frequency
+max_continent_freq = df['continent'].value_counts().idxmax()
+
+# c. Maximum & mean value in 'total_cases'
+max_total_cases = df['total_cases'].max()
+mean_total_cases = df['total_cases'].mean()
+
+# d. Quartile values in 'total_deaths'
+quartiles_total_deaths = df['total_deaths'].quantile([0.25, 0.5, 0.75])
+
+# e. Continent with maximum 'human_development_index'
+max_hdi_continent = df.loc[df['human_development_index'].idxmax()]['continent']
+
+# f. Continent with minimum 'gdp_per_capita'
+min_gdp_continent = df.loc[df['gdp_per_capita'].idxmin()]['continent']
+
+# 4. Filter the dataframe
+selected_columns = ['continent', 'location', 'date', 'total_cases', 'total_deaths', 'gdp_per_capita', 'human_development_index']
+df_filtered = df[selected_columns]
+
+# 5. Data Cleaning
+# a. Remove duplicates
+df_cleaned = df_filtered.drop_duplicates()
+
+# b. Find missing values
+missing_values = df_cleaned.isnull().sum()
+
+# c. Remove observations with missing continent values
+df_cleaned = df_cleaned.dropna(subset=['continent'])
+
+# d. Fill missing values with 0
+df_cleaned = df_cleaned.fillna(0)
+
+# 6. Date time format
+df_cleaned['date'] = pd.to_datetime(df_cleaned['date'])
+df_cleaned['month'] = df_cleaned['date'].dt.month
+
+# 7. Data Aggregation
+df_groupby = df_cleaned.groupby('continent').max().reset_index()
+
+# 8. Feature Engineering
+df_groupby['total_deaths_to_total_cases'] = df_groupby['total_deaths'] / df_groupby['total_cases']
+
+# 9. Data Visualization
+# a. Univariate analysis on 'gdp_per_capita'
+sns.displot(df_cleaned, x='gdp_per_capita', kde=True)
+plt.title('Distribution of GDP per Capita')
+plt.show()
+
+# b. Scatter plot of 'total_cases' & 'gdp_per_capita'
+plt.figure(figsize=(10, 6))
+sns.scatterplot(data=df_cleaned, x='total_cases', y='gdp_per_capita', hue='continent')
+plt.title('Scatter Plot: Total Cases vs GDP per Capita')
+plt.show()
+
+# c. Pairplot
+sns.pairplot(df_groupby, hue='continent')
+plt.title('Pairplot of Aggregated Data by Continent')
+plt.show()
+
+# d. Bar plot of 'continent' column with 'total_cases'
+plt.figure(figsize=(10, 6))
+sns.catplot(data=df_groupby, x='continent', y='total_cases', kind='bar')
+plt.title('Total Cases by Continent')
+plt.xticks(rotation=45)
+plt.show()
+
+# 10. Save df_groupby dataframe to a local CSV file
+df_groupby.to_csv('df_groupby.csv', index=False)
